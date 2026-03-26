@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const API_TOKEN = '99b76973b1ff817fcb0bfb852f48fb4be4aa163ce84d6b755657afd01625e402';
+const API_TOKEN = 'dfb03e9a153135334537e0c44b683cc54474868fae45005b4094ac8accd66b40';
 const SITE_ID = '68e69029e8acd25d901194f7';
 const BASE_URL = 'https://api.webflow.com/v2';
 
