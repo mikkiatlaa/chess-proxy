@@ -25,12 +25,19 @@ async function webflowFetch(path, method = 'GET', body = null) {
   return { status: res.status, data };
 }
 
-// Get all players
+async function findCollection(keyword) {
+  const cols = await webflowFetch(`/sites/${SITE_ID}/collections`);
+  const col = cols.data.collections.find(c =>
+    c.displayName.toLowerCase().includes(keyword.toLowerCase())
+  );
+  if (!col) throw new Error(`Collection not found for keyword: ${keyword}`);
+  return col;
+}
+
 app.get('/players', async (req, res) => {
   try {
-    const cols = await webflowFetch(`/sites/${SITE_ID}/collections`);
-    const col = cols.data.collections.find(c => c.displayName.toLowerCase().includes('leaderboard'));
-    if (!col) return res.status(404).json({ error: 'Collection not found' });
+    const keyword = req.query.collection || 'leaderboard';
+    const col = await findCollection(keyword);
     const items = await webflowFetch(`/collections/${col.id}/items?limit=100`);
     const players = items.data.items.map(item => ({
       id: item.id,
@@ -45,36 +52,33 @@ app.get('/players', async (req, res) => {
   }
 });
 
-// Add a player
 app.post('/players', async (req, res) => {
   try {
-    const { name, rank } = req.body;
-    const cols = await webflowFetch(`/sites/${SITE_ID}/collections`);
-    const col = cols.data.collections.find(c => c.displayName.toLowerCase().includes('leaderboard'));
-    const result = await webflowFetch(`/collections/${col.id}/items/live`, 'POST', {
-      fieldData: { name, rank, score: 0 }
-    });
+    const keyword = req.query.collection || 'leaderboard';
+    const col = await findCollection(keyword);
+    const { name, rank, score } = req.body;
+    const fieldData = { name, score: score || 0 };
+    if (rank) fieldData.rank = rank;
+    const result = await webflowFetch(`/collections/${col.id}/items/live`, 'POST', { fieldData });
     res.json(result.data);
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Update score
 app.patch('/players/:collectionId/:itemId', async (req, res) => {
   try {
     const { collectionId, itemId } = req.params;
     const { name, rank, score } = req.body;
-    const result = await webflowFetch(`/collections/${collectionId}/items/${itemId}/live`, 'PATCH', {
-      fieldData: { name, rank, score }
-    });
+    const fieldData = { name, score };
+    if (rank) fieldData.rank = rank;
+    const result = await webflowFetch(`/collections/${collectionId}/items/${itemId}/live`, 'PATCH', { fieldData });
     res.json(result.data);
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Delete a player
 app.delete('/players/:collectionId/:itemId', async (req, res) => {
   try {
     const { collectionId, itemId } = req.params;
