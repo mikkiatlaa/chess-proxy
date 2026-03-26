@@ -83,6 +83,7 @@ app.delete('/players/:collectionId/:itemId', async (req, res) => {
   try {
     const { collectionId, itemId } = req.params;
     await webflowFetch(`/collections/${collectionId}/items/${itemId}/live`, 'DELETE');
+    await webflowFetch(`/collections/${collectionId}/items/${itemId}`, 'DELETE');
     res.json({ success: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
